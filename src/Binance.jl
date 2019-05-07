@@ -1,6 +1,8 @@
 module Binance
 
 import HTTP, SHA, JSON, Dates, Printf.@sprintf
+using DataFrames
+
 
 # base URL of the Binance API
 BINANCE_API_REST = "https://api.binance.com/"
@@ -123,42 +125,42 @@ function getKlines(symbol; startDateTime=nothing, endDateTime=nothing, interval=
 end
 
 ##################### SECURED CALL's NEEDS apiKey / apiSecret #####################
-function createOrder(symbol::String, orderSide::String; 
-    quantity::Float64=0.0, orderType::String = "LIMIT", 
-    price::Float64=0.0, stopPrice::Float64=0.0, 
+function createOrder(symbol::String, orderSide::String;
+    quantity::Float64=0.0, orderType::String = "LIMIT",
+    price::Float64=0.0, stopPrice::Float64=0.0,
     icebergQty::Float64=0.0, newClientOrderId::String="")
-      
+
       if quantity <= 0.0
           error("Quantity cannot be <=0 for order type.")
       end
-  
+
       println("$orderSide => $symbol q: $quantity, p: $price ")
-      
-      order = Dict("symbol"           => symbol, 
+
+      order = Dict("symbol"           => symbol,
                       "side"             => orderSide,
                       "type"             => orderType,
                       "quantity"         => @sprintf("%.8f", quantity),
                       "newOrderRespType" => "FULL",
                       "recvWindow"       => 10000)
-  
+
       if newClientOrderId != ""
           order["newClientOrderId"] = newClientOrderId;
       end
-  
+
       if orderType == "LIMIT" || orderType == "LIMIT_MAKER"
           if price <= 0.0
               error("Price cannot be <= 0 for order type.")
           end
           order["price"] =  @sprintf("%.8f", price)
       end
-  
+
       if orderType == "STOP_LOSS" || orderType == "TAKE_PROFIT"
           if stopPrice <= 0.0
               error("StopPrice cannot be <= 0 for order type.")
           end
           order["stopPrice"] = @sprintf("%.8f", stopPrice)
       end
-  
+
       if orderType == "STOP_LOSS_LIMIT" || orderType == "TAKE_PROFIT_LIMIT"
           if price <= 0.0 || stopPrice <= 0.0
               error("Price / StopPrice cannot be <= 0 for order type.")
@@ -166,19 +168,19 @@ function createOrder(symbol::String, orderSide::String;
           order["price"] =  @sprintf("%.8f", price)
           order["stopPrice"] =  @sprintf("%.8f", stopPrice)
       end
-  
+
       if orderType == "TAKE_PROFIT"
           if price <= 0.0 || stopPrice <= 0.0
               error("Price / StopPrice cannot be <= 0 for STOP_LOSS_LIMIT order type.")
           end
           order["price"] =  @sprintf("%.8f", price)
           order["stopPrice"] =  @sprintf("%.8f", stopPrice)
-      end 
-  
+      end
+
       if orderType == "LIMIT"  || orderType == "STOP_LOSS_LIMIT" || orderType == "TAKE_PROFIT_LIMIT"
           order["timeInForce"] = "GTC"
       end
-  
+
       order
   end
 
@@ -307,7 +309,7 @@ function keepAlive(apiKey, listenKey)
     end
 
     headers = Dict("X-MBX-APIKEY" => apiKey)
-    body = string("listenKey=", listenKey) 
+    body = string("listenKey=", listenKey)
     r = HTTP.request("PUT", BINANCE_API_USER_DATA_STREAM, headers, body)
     return true
 end
@@ -317,7 +319,7 @@ function closeUserData(apiKey, listenKey)
         return false
     end
     headers = Dict("X-MBX-APIKEY" => apiKey)
-    body = string("listenKey=", listenKey) 
+    body = string("listenKey=", listenKey)
     r = HTTP.request("DELETE", BINANCE_API_USER_DATA_STREAM, headers, body)
    return true
 end
@@ -326,7 +328,7 @@ function wsUserData(channel::Channel, apiKey, listenKey; reconnect=true)
 
     function keepAlive()
         keepAlive(apiKey, listenKey)
-    end    
+    end
 
     Timer(keepAlive, 1800; interval = 1800)
 
@@ -340,7 +342,7 @@ function wsUserData(channel::Channel, apiKey, listenKey; reconnect=true)
             end
         catch x
             println(x)
-            error = true; 
+            error = true;
         end
     end
 
