@@ -1,20 +1,7 @@
 module Binance
-using Dates, DataFrames
-import HTTP, SHA, JSON, Printf.@sprintf
+using Reexport
 
-export
-ping,
-servertime,
-get24hr,
-getallprices,
-getallbookticks,
-getmarket,
-getklines,
-gethistklines,
-wsTradeRaw
-
-include("helper.jl")
-include("client.jl")
-include("websocket.jl")
+include("Client.jl")          ;@reexport using .Client
+include("Websocket.jl")       ;@reexport using .Websocket
 
 end

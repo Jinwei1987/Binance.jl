@@ -1,4 +1,19 @@
 ##################### PUBLIC CALL's #####################
+module Client
+using Dates, DataFrames, Printf
+import HTTP, SHA, JSON
+
+export
+ping,
+servertime,
+get24hr,
+getallprices,
+getallbookticks,
+getmarket,
+getklines,
+gethistklines
+
+include("helper.jl")
 
 function requestget(uri::String, params::Dict=Dict())
     r = HTTP.get(uri, query=dict2str(params))
@@ -53,23 +68,56 @@ function getmarket(symbol::Union{String, Nothing}=nothing)
 end
 
 # binance get candlesticks/klines data
-function getklines(symbol::String; startDateTime::Union{DateTime, Nothing}=nothing,
-    endDateTime::Union{DateTime, Nothing}=nothing,
+function getklines(symbol::String; starttime::Union{DateTime, Nothing}=nothing,
+    endtime::Union{DateTime, Nothing}=nothing,
     interval::String="1m", limit::Int=500)
 
     params = Dict("symbol" => symbol, "interval" => interval, "limit" => limit)
-    if startDateTime != nothing
-        params["startTime"] = datetime2int64(startDateTime)
+    if starttime != nothing
+        params["startTime"] = datetime2int64(starttime)
     end
-    if endDateTime != nothing
-        params["endTime"] = datetime2int64(endDateTime)
+    if endtime != nothing
+        params["endTime"] = datetime2int64(endtime)
     end
-    requestgetv1("klines", params)
+    r = requestgetv1("klines", params)
+    for d in r
+        d[1] = int642datetime(d[1])
+        d[7] = int642datetime(d[7])
+    end
+    r
 end
 
-function gethistklines(symbol::String, interval::Period,
-    startDateTime::DateTime, endDateTime::DateTime=nothing, limit::Int=500)
+function earliest_timestamp(symbol::String, interval::String)
+    kline = getklines(symbol, starttime=unix2datetime(0),
+    interval=interval, limit=1)
+    return kline[1][1]
+end
 
+function gethistklines(symbol::String, interval::String,
+    starttime::DateTime, endtime::Union{DateTime, Nothing}=nothing,
+    limit::Int=500)
+    output = []
+    period = str2period(interval)
+    earliesttime = earliest_timestamp(symbol, interval)
+    startTime = max(starttime, earliesttime)
+    idx = 0
+    while true
+        tempdata = getklines(symbol, starttime=starttime,
+        endtime=endtime, interval=interval, limit=limit)
+        if length(tempdata) == 0
+            break
+        end
+        output = [output; tempdata]
+        if length(tempdata) < limit
+            break
+        end
+        starttime = tempdata[end][1] + period
+        idx += 1
+        if idx % 3 == 0
+            sleep(0.5)
+        end
+    end
+    output
 end # function
 
 ##################### SECURED CALL's NEEDS apiKey / apiSecret #####################
@@ -220,4 +268,6 @@ function hodlN(N;cap=0.1)
         end
     end
     market
+end
+
 end

@@ -18,16 +18,8 @@ userdataChannel = Channel(10)
 apiKey = ""
 apiSecret = ""
 
-listenKey = Binance.openUserData(apiKey)
+#listenKey = Binance.openUserData(apiKey)
 #Binance.closeUserData(apiKey)
-listenKey = Binance.pingUserData(apiKey,listenKey)
+#listenKey = Binance.pingUserData(apiKey,listenKey)
 
-wsUserData
-
-
-
-
-
-
-
-
+#wsUserData

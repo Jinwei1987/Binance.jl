@@ -1,3 +1,12 @@
+module Websocket
+using Dates, DataFrames, Printf
+import HTTP, SHA, JSON
+
+export
+wstraderaw
+
+include("helper.jl")
+
 BINANCE_API_USER_DATA_STREAM = string(BINANCE_API_REST, "api/v1/userDataStream")
 
 
@@ -23,7 +32,7 @@ function wsTradeAgg(channel::Channel, symbol::String)
     wsFunction(channel, "@aggTrade", symbol)
 end
 
-function wsTradeRaw(channel::Channel, symbol::String)
+function wstraderaw(channel::Channel, symbol::String)
     wsFunction(channel, "@trade", symbol)
 end
 
@@ -138,3 +147,5 @@ function wsUserData(channel::Channel, apiKey, listenKey; reconnect=true)
     end
 
 end
+
+end  # module Websocket
